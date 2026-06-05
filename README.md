@@ -17,3 +17,27 @@ Truss removes this friction using a specialized, polyglot architecture built for
 
 
 ------
+
+Truss utilizes a monorepo layout where the system core is governed by protocol buffer definitions, enforcing compile-time type boundaries across the entire stack.
+
+```mermaid
+graph TD
+    Client[Flutter Web / Mobile App] -- Connect Protocol (HTTP/2 or HTTP/1.1) --> GoBackend[Go API & Core Engine]
+    AI[AI Clients / IDE Extensions] -- HTTP + SSE (JSON-RPC 2.0) --> MCP[Embedded MCP Server]
+
+    CRM[Webhooks: CRM / ERP] --> GoBackend
+    GoBackend --> Auth[Passkey / JWT Middleware]
+    Auth --> ContextProp[Go Context Propagation]
+
+    ContextProp --> DB[(Postgres + pgvector)]
+    ContextProp --> Queue[River / Asynq Distributed Queue]
+    Queue --> LLM[Go LLM Client + Struct Validation]
+```
+
+Truss communicates via Connect, a lightweight alternative to traditional gRPC plumbing:
+
+    On Mobile: Flutter consumes a highly efficient, native binary gRPC chunk stream.
+
+    On Web Browsers: Connect automatically downgrades the stream to Server-Sent Events (SSE) over standard HTTP/1.1 or HTTP/2, bypassing native browser limitations regarding HTTP/2 trailers. Real-time telemetry updates work out-of-the-box without extra infrastructure.
+
+----
