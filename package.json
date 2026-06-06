@@ -1,4 +1,12 @@
 {
+	"name": "truss",
+	"private": true,
+	"scripts": {
+		"build": "pnpm --filter @truss/server build",
+
+		"lint": "pnpm -r lint",
+		"format": "pnpm -r format"
+	},
 	"devDependencies": {
 		"eslint": "^10.4.1",
 		"typescript-eslint": "^8.60.1",
