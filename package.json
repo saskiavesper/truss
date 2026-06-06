@@ -2,10 +2,10 @@
 	"name": "truss",
 	"private": true,
 	"scripts": {
-		"build": "pnpm --filter @truss/server build",
-
+		"build:server": "pnpm --filter @truss/server build",
 		"lint": "pnpm -r lint",
-		"format": "pnpm -r format"
+		"format": "pnpm -r format",
+		"format:fix": "pnpm -r exec prettier --write src/"
 	},
 	"devDependencies": {
 		"esbuild": "^0.28.0",

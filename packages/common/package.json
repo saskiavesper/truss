@@ -1,0 +1,37 @@
+{
+  "name": "@truss/common",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "wireit",
+    "lint": "wireit",
+    "format": "wireit"
+  },
+  "wireit": {
+    "build": {
+      "command": "tsc",
+      "files": [
+        "src/**/*.ts",
+        "tsconfig.json"
+      ],
+      "output": [
+        "dist/**"
+      ]
+    },
+    "lint": {
+      "command": "eslint src/",
+      "files": [
+        "src/**/*.ts",
+        "../../eslint.config.mjs"
+      ]
+    },
+    "format": {
+      "command": "prettier --check src/",
+      "files": [
+        "src/**/*.ts",
+        "../../.prettierrc"
+      ]
+    }
+  }
+}

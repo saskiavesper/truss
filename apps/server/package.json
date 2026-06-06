@@ -1,0 +1,43 @@
+{
+  "name": "@truss/server",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "wireit",
+    "lint": "wireit",
+    "format": "wireit"
+  },
+  "wireit": {
+    "build": {
+      "command": "esbuild src/app.ts --bundle --platform=node --target=node24 --outfile=dist/server.js",
+      "dependencies": [
+        "../../packages/common:build"
+      ],
+      "files": [
+        "src/**/*.ts"
+      ],
+      "output": [
+        "dist/server.js"
+      ]
+    },
+    "lint": {
+      "command": "eslint src/",
+      "dependencies": [
+        "../../packages/common:lint"
+      ],
+      "files": [
+        "src/**/*.ts",
+        "../../eslint.config.mjs"
+      ]
+    },
+    "format": {
+      "command": "prettier --check src/",
+      "dependencies": [
+        "../../packages/common:format"
+      ],
+      "files": [
+        "src/**/*.ts",
+        "../../.prettierrc"
+      ]
+    }
+  }
+}
