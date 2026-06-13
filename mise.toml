@@ -1,0 +1,10 @@
+[tools]
+lefthook = "latest"
+rust = "1.96"
+
+[tasks.setup]
+description = 'setup environment for development'
+run = '''
+mise install
+lefthook install
+'''

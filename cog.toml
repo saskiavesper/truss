@@ -1,0 +1,18 @@
+[commit_types]
+feat = { description = "A new feature", changelog_title = "Features" }
+fix = { description = "A bug fix", changelog_title = "Bug Fixes" }
+docs = { description = "Documentation only changes", changelog_title = "Documentation" }
+style = { description = "Changes that do not affect the meaning of the code", changelog_title = "Styling" }
+refactor = { description = "A code change that neither fixes a bug nor adds a feature", changelog_title = "Refactoring" }
+perf = { description = "A code change that improves performance", changelog_title = "Performance" }
+test = { description = "Adding missing tests or correcting existing tests", changelog_title = "Tests" }
+build = { description = "Changes that affect the build system or external dependencies", changelog_title = "Build System" }
+ci = { description = "Changes to CI configuration files and scripts", changelog_title = "Continuous Integration" }
+chore = { description = "Other changes that don't modify src or test files", changelog_title = "Chores" }
+revert = { description = "Reverts a previous commit", changelog_title = "Reverts" }
+
+[commit_parser]
+disallow_note = false
+
+[pre_commit_commands]
+hook = ["cargo", "fmt", "--", "--check"]
