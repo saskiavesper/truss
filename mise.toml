@@ -1,4 +1,5 @@
 [tools]
+cocogitto = "latest"
 lefthook = "latest"
 rust = "1.96"
 
