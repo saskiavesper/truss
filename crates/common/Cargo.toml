@@ -7,9 +7,4 @@ description = "Common library for Truss"
 workspace = true
 
 [dependencies]
-serde.workspace = true
-tokio.workspace = true
-anyhow.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
-regex = "1.12.4"
+regex.workspace = true
