@@ -1,5 +1,7 @@
+use std::ops::Deref;
 use std::sync::OnceLock;
 use regex::Regex;
+use uuid::Uuid;
 
 /// A domain type indicating a `String` that is not empty or blank.
 ///
@@ -32,7 +34,7 @@ impl TryFrom<String> for NonEmptyString {
     }
 }
 /// Allows `&NonEmptyString` to behave like a `&str`.
-impl std::ops::Deref for NonEmptyString {
+impl Deref for NonEmptyString {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -56,14 +58,14 @@ impl TryFrom<String> for Email {
     type Error = &'static str;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let trimmed = value.trim();
-        if is_email_valid(trimmed) {
+        if !is_email_valid(trimmed) {
             return Err("String is an invalid email");
         }
         Ok(Email(trimmed.to_string()))
     }
 }
 
-impl std::ops::Deref  for Email {
+impl Deref  for Email {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -89,7 +91,7 @@ impl TryFrom<String> for Title {
     }
 }
 
-impl std::ops::Deref for Title {
+impl Deref for Title {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -113,7 +115,7 @@ impl TryFrom<String> for Description {
     }
 }
 
-impl std::ops::Deref for Description {
+impl Deref for Description {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -136,7 +138,7 @@ impl TryFrom<u64> for NonNegInteger {
     }
 }
 
-impl std::ops::Deref for NonNegInteger {
+impl Deref for NonNegInteger {
     type Target = u64;
 
     fn deref(&self) -> &Self::Target {
@@ -166,8 +168,35 @@ impl TryFrom<String> for Username {
     }
 }
 
-impl std::ops::Deref for Username {
+impl Deref for Username {
     type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Id(Uuid);
+
+impl Id {
+    pub fn new() -> Self {
+        Self(Uuid::now_v7())
+    }
+}
+
+impl TryFrom<String> for Id {
+    type Error = uuid::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+       Uuid::try_from(value)
+           .map(|t| Id(t))
+    }
+}
+
+impl  Deref for Id {
+    type Target = Uuid;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -177,7 +206,6 @@ impl std::ops::Deref for Username {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ops::Deref;
 
     #[test]
     fn parses_a_string_with_content() {
