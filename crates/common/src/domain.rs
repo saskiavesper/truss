@@ -137,25 +137,6 @@ impl Deref for Description {
     }
 }
 
-/// A domain type for a positive integer (greater than zero).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct NonNegInteger(u64);
-
-impl TryFrom<u64> for NonNegInteger {
-    type Error = &'static str;
-    fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if value == 0 { Err("Value must be greater than zero") } else { Ok(Self(value)) }
-    }
-}
-
-impl Deref for NonNegInteger {
-    type Target = u64;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 /// A domain type for a username between 2 and 50 characters, optionally starting with `@`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Username(String);
@@ -322,19 +303,6 @@ mod tests {
         let result = Description::try_from(s.clone());
         assert!(result.is_ok());
         assert_eq!(result.unwrap().deref(), s);
-    }
-
-    #[test]
-    fn non_neg_integer_accepts_positive() {
-        let result = NonNegInteger::try_from(1u64);
-        assert!(result.is_ok());
-        assert_eq!(*result.unwrap(), 1);
-    }
-
-    #[test]
-    fn non_neg_integer_rejects_zero() {
-        let result = NonNegInteger::try_from(0u64);
-        assert!(result.is_err_and(|err| err == "Value must be greater than zero"));
     }
 
     #[test]
