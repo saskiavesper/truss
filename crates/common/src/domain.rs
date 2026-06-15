@@ -20,7 +20,7 @@ pub struct NonEmptyString(String);
 
 impl TryFrom<String> for NonEmptyString {
     type Error = &'static str;
-    /// Parses a [`String`] into a possible [`NonEmptyString`].
+    /// Parses a [`String`] into a [`NonEmptyString`].
     ///
     /// Strings that are empty or blank (only whitespace) are invalid and return [`Self::Error`].
     /// Otherwise, returns [`Ok`] containing the trimmed [`NonEmptyString`].
@@ -42,6 +42,18 @@ impl Deref for NonEmptyString {
     }
 }
 
+/// A domain type indicating a valid email address.
+///
+/// # Examples
+///
+/// ```
+/// # use common::domain::Email;
+/// let valid = Email::try_from("user@example.com".to_string());
+/// assert!(valid.is_ok());
+///
+/// let invalid = Email::try_from("not-an-email".to_string());
+/// assert!(invalid.is_err());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Email(String);
 
@@ -54,6 +66,10 @@ fn is_email_valid(email: &str) -> bool {
 
 impl TryFrom<String> for Email {
     type Error = &'static str;
+    /// Parses a [`String`] into an [`Email`].
+    ///
+    /// Strings that do not match the email regex pattern are rejected.
+    /// Otherwise, returns [`Ok`] containing the trimmed [`Email`].
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let trimmed = value.trim();
         if !is_email_valid(trimmed) {
@@ -170,10 +186,23 @@ impl Deref for Username {
     }
 }
 
+/// A domain type wrapping a [`Uuid`] v7 identifier.
+///
+/// Provides type-safe identifiers backed by time-ordered UUIDs (v7).
+///
+/// # Examples
+///
+/// ```
+/// # use common::domain::Id;
+/// let id = Id::new();
+/// let parsed = Id::try_from("00000000-0000-0000-0000-000000000000".to_string());
+/// assert!(parsed.is_ok());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Id(Uuid);
 
 impl Id {
+    /// Creates a new [`Id`] from a UUID v7 timestamp.
     #[must_use]
     pub fn new() -> Self {
         Self(Uuid::now_v7())
@@ -181,6 +210,7 @@ impl Id {
 }
 
 impl Default for Id {
+    /// Returns [`Id::new()`].
     fn default() -> Self {
         Self::new()
     }
@@ -189,6 +219,9 @@ impl Default for Id {
 impl TryFrom<String> for Id {
     type Error = uuid::Error;
 
+    /// Parses a [`String`] into an [`Id`].
+    ///
+    /// The string must be a valid UUID (any variant). Returns [`uuid::Error`] on failure.
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Uuid::try_from(value).map(Id)
     }
