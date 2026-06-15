@@ -1,6 +1,6 @@
+use regex::Regex;
 use std::ops::Deref;
 use std::sync::OnceLock;
-use regex::Regex;
 use uuid::Uuid;
 
 /// A domain type indicating a `String` that is not empty or blank.
@@ -45,12 +45,10 @@ impl Deref for NonEmptyString {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Email(String);
 
-
 fn is_email_valid(email: &str) -> bool {
     static EMAIL_REGEX: OnceLock<Regex> = OnceLock::new();
-    let regex = EMAIL_REGEX.get_or_init(|| {
-        Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$").unwrap()
-    });
+    let regex = EMAIL_REGEX
+        .get_or_init(|| Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$").unwrap());
     regex.is_match(email)
 }
 
@@ -61,11 +59,11 @@ impl TryFrom<String> for Email {
         if !is_email_valid(trimmed) {
             return Err("String is an invalid email");
         }
-        Ok(Email(trimmed.to_string()))
+        Ok(Self(trimmed.to_string()))
     }
 }
 
-impl Deref  for Email {
+impl Deref for Email {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -130,11 +128,7 @@ pub struct NonNegInteger(u64);
 impl TryFrom<u64> for NonNegInteger {
     type Error = &'static str;
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if value == 0 {
-            Err("Value must be greater than zero")
-        } else {
-            Ok(Self(value))
-        }
+        if value == 0 { Err("Value must be greater than zero") } else { Ok(Self(value)) }
     }
 }
 
@@ -176,13 +170,19 @@ impl Deref for Username {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Id(Uuid);
 
 impl Id {
+    #[must_use]
     pub fn new() -> Self {
         Self(Uuid::now_v7())
+    }
+}
+
+impl Default for Id {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -190,12 +190,11 @@ impl TryFrom<String> for Id {
     type Error = uuid::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-       Uuid::try_from(value)
-           .map(|t| Id(t))
+        Uuid::try_from(value).map(Id)
     }
 }
 
-impl  Deref for Id {
+impl Deref for Id {
     type Target = Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -235,7 +234,7 @@ mod tests {
 
     #[test]
     fn empty_is_invalid() {
-        let result = NonEmptyString::try_from("".to_string());
+        let result = NonEmptyString::try_from(String::new());
         assert!(result.is_err_and(|err| err == "String cannot be empty or whitespace"));
     }
 
@@ -248,7 +247,7 @@ mod tests {
 
     #[test]
     fn title_rejects_empty() {
-        let result = Title::try_from("".to_string());
+        let result = Title::try_from(String::new());
         assert!(result.is_err_and(|err| err == "Title cannot be empty or whitespace"));
     }
 
@@ -267,7 +266,7 @@ mod tests {
 
     #[test]
     fn description_accepts_empty() {
-        let result = Description::try_from("".to_string());
+        let result = Description::try_from(String::new());
         assert!(result.is_ok());
     }
 
@@ -321,7 +320,7 @@ mod tests {
 
     #[test]
     fn username_rejects_empty() {
-        let result = Username::try_from("".to_string());
+        let result = Username::try_from(String::new());
         assert!(result.is_err_and(|err| err == "Username cannot be empty"));
     }
 
