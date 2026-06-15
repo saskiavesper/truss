@@ -10,4 +10,4 @@ pre-commit:
 commit-msg:
   commands:
     cog:
-      run: cog verify commit {1}
+      run: cog verify --file {1}
