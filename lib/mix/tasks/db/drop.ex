@@ -14,11 +14,11 @@ defmodule Mix.Tasks.Db.Drop do
       |> Keyword.put(:database, "postgres")
       |> Keyword.put(:types, Truss.PostgrexTypes)
 
-    {:ok, conn} = Postgrex.start_link(conn_opts)
+    {:ok, conn} = postgrex().start_link(conn_opts)
 
     Mix.shell().info("Dropping database: #{db_name}")
 
-    Postgrex.query!(
+    postgrex().query!(
       conn,
       """
       SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -29,8 +29,10 @@ defmodule Mix.Tasks.Db.Drop do
       [db_name]
     )
 
-    Postgrex.query!(conn, "DROP DATABASE IF EXISTS #{db_name}", [])
+    postgrex().query!(conn, "DROP DATABASE IF EXISTS #{db_name}", [])
 
     Mix.shell().info("Database #{db_name} dropped")
   end
+
+  defp postgrex, do: Application.get_env(:truss, :postgrex_module, Postgrex)
 end

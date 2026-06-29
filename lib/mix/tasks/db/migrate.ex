@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Migrate do
+defmodule Mix.Tasks.Db.Migrate do
   use Mix.Task
 
   @shortdoc "Runs all pending SQL migrations in priv/migrations"
@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Migrate do
 
     conn_opts = db_connection_opts()
 
-    {:ok, conn} = Postgrex.start_link(conn_opts)
+    {:ok, conn} = postgrex().start_link(conn_opts)
 
     create_schema_migrations_table(conn)
 
@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Migrate do
   end
 
   defp create_schema_migrations_table(conn) do
-    Postgrex.query!(
+    postgrex().query!(
       conn,
       """
       CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Migrate do
 
   defp applied_migrations(conn) do
     conn
-    |> Postgrex.query!("SELECT version FROM schema_migrations ORDER BY version", [])
+    |> postgrex().query!("SELECT version FROM schema_migrations ORDER BY version", [])
     |> Map.get(:rows)
     |> List.flatten()
     |> MapSet.new()
@@ -62,9 +62,10 @@ defmodule Mix.Tasks.Migrate do
 
       sql = File.read!(path)
 
-      case Postgrex.query(conn, sql, []) do
+      case postgrex().query(conn, sql, []) do
         {:ok, _} ->
-          Postgrex.query!(conn, "INSERT INTO schema_migrations (version) VALUES ($1)", [version])
+          postgrex().query!(conn, "INSERT INTO schema_migrations (version) VALUES ($1)", [version])
+
           Mix.shell().info("  OK")
 
         {:error, reason} ->
@@ -78,4 +79,6 @@ defmodule Mix.Tasks.Migrate do
     config = Truss.Config.Database.fetch!()
     Keyword.new(config) ++ [types: Truss.PostgrexTypes]
   end
+
+  defp postgrex, do: Application.get_env(:truss, :postgrex_module, Postgrex)
 end
