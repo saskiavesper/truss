@@ -6,7 +6,10 @@ config :truss, :infrastructure,
     port: 5432,
     username: "postgres",
     password: "postgres",
-    database: "truss_dev"
+    database: "truss_dev",
+    pool_size: 10,
+    types: Truss.PostgrexTypes,
+    name: Truss.Database
   ]
 
 config :logger, level: :info
