@@ -9,6 +9,16 @@ Preconfigured services for local development via Docker Compose.
 | PostgreSQL | `pgvector/pgvector` | `5432` | Database with pgvector extension |
 | RabbitMQ   | `rabbitmq` | `5672` / `15672` | Message broker + management UI |
 
+## Setup
+
+Copy the environment template and adjust values as needed:
+
+```sh
+cp dev/env/.env.example .env
+```
+
+Edit `.env` to match your local setup (`.env` is gitignored).
+
 ## Quick Start
 
 ```sh
@@ -72,10 +82,12 @@ All service settings are configurable:
 
 | Variable | Default | Service |
 |----------|---------|---------|
+| `POSTGRES_HOST` | `localhost` | PostgreSQL |
 | `POSTGRES_PORT` | `5432` | PostgreSQL |
-| `POSTGRES_USER` | `truss` | PostgreSQL |
-| `POSTGRES_PASSWORD` | `truss_password` | PostgreSQL |
-| `POSTGRES_DB` | `truss_dev` | PostgreSQL |
+| `POSTGRES_USER` | `postgres` | PostgreSQL |
+| `POSTGRES_PASSWORD` | `postgres` | PostgreSQL |
+| `POSTGRES_DATABASE` | `truss_dev` | PostgreSQL |
+| `POOL_SIZE` | `10` | App |
 | `RABBITMQ_PORT` | `5672` | RabbitMQ |
 | `RABBITMQ_MGMT_PORT` | `15672` | RabbitMQ |
 | `RABBITMQ_USER` | `guest` | RabbitMQ |

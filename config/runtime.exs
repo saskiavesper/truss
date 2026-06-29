@@ -5,7 +5,7 @@ if config_env() == :prod do
   postgres_port = String.to_integer(System.get_env("POSTGRES_PORT", "5432"))
   postgres_user = System.get_env("POSTGRES_USER", "postgres")
   postgres_password = System.get_env("POSTGRES_PASSWORD", "postgres")
-  postgres_database = System.get_env("POSTGRES_DB", "truss_dev")
+  postgres_database = System.get_env("POSTGRES_DATABASE", "truss_dev")
 
   config :truss, :infrastructure,
     database: [
