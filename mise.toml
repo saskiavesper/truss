@@ -1,0 +1,15 @@
+[tools]
+elixir = "1.20"
+erlang = "29"
+lefthook = "latest"
+cocogitto = "latest"
+
+[tasks.setup]
+description = 'setup environment for development'
+run = '''
+mise install
+mix local.hex --force
+mix local.rebar --force
+mix deps.get
+lefthook install --force
+'''
