@@ -23,5 +23,5 @@ See [`dev/env/`](dev/env/) for service configuration and
 [`dev/docs/`](dev/docs/) for the full development guide.
 
 ---
-
+- Active development over [Codeberg](https://codeberg.org/saskiavesper/truss)
 - Licensed under AGLP see [LICENSE][./LICENSE]
