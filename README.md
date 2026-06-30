@@ -21,3 +21,7 @@ mise trust && mise setup
 
 See [`dev/env/`](dev/env/) for service configuration and
 [`dev/docs/`](dev/docs/) for the full development guide.
+
+---
+
+- Licensed under AGLP see [LICENSE][./LICENSE]
