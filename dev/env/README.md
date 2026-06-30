@@ -25,6 +25,74 @@ Edit `.env` to match your local setup (`.env` is gitignored).
 docker compose up -d
 ```
 
+## Database Migrations (Atlas)
+
+This project uses [Atlas](https://atlasgo.io) for database schema migrations.
+Atlas is a language-independent CLI tool — install it via:
+
+```sh
+# macOS/Linux
+curl -sSf https://atlasgo.sh | sh
+
+# or via Homebrew
+brew install ariga/tap/atlas
+```
+
+### Workflow
+
+The desired database state is defined in `priv/schema.sql`.
+When you change the schema, generate a new migration:
+
+```sh
+# Reads src, dev, and migration.dir from atlas.hcl's "dev" env:
+atlas migrate diff <migration_name> --env dev --format '{{ sql . "  " }}'
+
+# Or explicitly:
+atlas migrate diff <migration_name> \
+  --to file://priv/schema.sql \
+  --dev-url "postgres://postgres:postgres@localhost:5432/truss_dev?search_path=public&sslmode=disable" \
+  --format '{{ sql . "  " }}'
+```
+
+Apply pending migrations to your local database:
+
+```sh
+atlas migrate apply --env dev
+```
+
+Validate migration directory integrity:
+
+```sh
+atlas migrate validate --env dev
+```
+
+> **Note**: `atlas migrate lint` (for detecting destructive changes) is an
+> [Atlas Pro](https://atlasgo.io/pricing) feature. The community edition
+> validates integrity via `atlas migrate validate` and the `atlas.sum` hash
+> file.
+
+### `atlas.hcl`
+
+Project configuration lives in `atlas.hcl` at the project root. It defines
+environment connection URLs, the migration directory (`priv/migrations/`),
+and the desired schema source (`priv/schema.sql`).
+
+### Dev Database
+
+Atlas needs a **dev database** to parse and validate the SQL schema when
+computing diffs. A disposable Docker container is spun up automatically —
+no local database needed. The `dev` attribute in `atlas.hcl` uses the
+Docker driver with the same pgvector image as docker-compose:
+
+```
+docker+postgres://pgvector/pgvector:0.8.3-pg18-trixie/dev?search_path=public
+```
+
+Atlas pulls the image, starts the container, computes the diff, and tears
+it down — all in one command. No need to start docker-compose first.
+
+See the [Atlas docs](https://atlasgo.io/versioned/intro) for more.
+
 Check status:
 
 ```sh

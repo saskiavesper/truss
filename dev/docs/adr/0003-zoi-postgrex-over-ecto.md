@@ -66,14 +66,27 @@ and domain primitive construction.
 
 ### Migration Strategy
 
-SQL migrations live in `priv/migrations/` with the naming convention
-`YYYYMMDD_HHMMSS__<name>.sql`. Generated via:
+Database migrations are managed by **Atlas** (https://atlasgo.io), a
+language-independent schema migration tool. The desired database state is
+defined declaratively in `schema.sql` at the project root. Atlas auto-generates
+versioned migration files in `priv/migrations/` by diffing the desired state
+against the current migration chain.
+
+Key commands:
 
 ```sh
-mix gen.migration create_workspaces
+# Generate a new migration after changing priv/schema.sql:
+atlas migrate diff <name> --env dev --format '{{ sql . "  " }}'
+
+# Apply pending migrations:
+atlas migrate apply --env dev
+
+# Validate migration directory integrity:
+atlas migrate validate --env dev
 ```
 
-This produces `priv/migrations/20260126_163000__create_workspaces.sql`.
+See the [Atlas docs](https://atlasgo.io/versioned/intro) for full workflow
+details.
 
 ### Postgrex Types
 
