@@ -1,0 +1,2 @@
+-- Define desired database tables, indexes, views, and other objects here.
+-- PostgreSQL extensions (e.g., vector) are created via migration files.

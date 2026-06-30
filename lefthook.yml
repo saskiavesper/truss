@@ -8,6 +8,8 @@ pre-commit:
       run: mix credo --strict
     test:
       run: mix test
+    atlas-validate:
+      run: atlas migrate validate --env dev
 
 commit-msg:
   commands:
