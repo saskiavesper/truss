@@ -1,0 +1,18 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      run: mise format
+      stage_fixed: true
+      glob: "*.{go}"
+    lint:
+      run: mise lint
+      glob: "*.{go}"
+    test:
+      run: mise test
+      glob: "*.{go}"
+
+commit-msg:
+  commands:
+    cog:
+      run: cog verify --file {1}

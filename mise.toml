@@ -1,0 +1,39 @@
+[tools]
+rust = 'latest'
+lefthook = 'latest'
+cocogitto = 'latest'
+
+[tasks.setup]
+description = 'Install tools and setup development environment'
+run = '''
+mise install
+lefthook install --force
+'''
+
+[tasks.lint]
+description = 'Run clippy linter on Rust code'
+run = 'cargo clippy -- -D warnings'
+
+[tasks.format]
+description = 'Format Rust source files'
+run = 'cargo fmt'
+
+[tasks.test]
+description = 'Run all tests'
+run = 'cargo test'
+
+[tasks.build]
+description = 'Build all Rust packages'
+run = 'cargo build'
+
+[tasks.coverage]
+description = 'Run tests with coverage and generate HTML report'
+run = '''
+cargo install cargo-tarpaulin
+cargo tarpaulin --out Html
+echo "Coverage report: tarpaulin-report.html"
+'''
+
+[tasks."db.reset"]
+description = 'Reset local database services (deletes all data!)'
+run = 'docker compose -f dev/env/docker-compose.yml down -v && docker compose -f dev/env/docker-compose.yml up -d'
