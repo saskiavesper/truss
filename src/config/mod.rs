@@ -2,104 +2,165 @@ mod environment;
 
 pub use environment::{Environment, EnvironmentError};
 
-use std::env;
-use std::fs;
-use std::path::Path;
-
-/// Configuration errors.
-#[derive(Debug, thiserror::Error)]
-pub enum ConfigError {
-    #[error("failed to read config file: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("failed to parse config file: {0}")]
-    Parse(#[from] toml::de::Error),
-
-    #[error("failed to parse environment: {0}")]
-    Environment(#[from] EnvironmentError),
-}
+use config::{Config as ConfigRs, ConfigError, Environment as ConfigEnvironment};
 
 /// Holds all application configuration.
+///
+/// Environment variables use underscore as separator:
+/// - TRUSS_ENVIRONMENT
+/// - TRUSS_DATABASE_HOST
+/// - TRUSS_DATABASE_PORT
+/// - TRUSS_NATS_PORT
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     /// The current application environment.
     pub environment: Environment,
+
+    /// Database configuration.
+    pub database: DatabaseConfig,
+
+    /// NATS configuration.
+    pub nats: NatsConfig,
+}
+
+/// Database configuration.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DatabaseConfig {
+    pub host: String,
+    pub port: u16,
+    pub user: String,
+    pub password: String,
+    pub database: String,
+    pub pool_size: u32,
+}
+
+/// NATS configuration.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NatsConfig {
+    pub port: u16,
+    pub mgmt_port: u16,
 }
 
 impl Config {
-    /// Returns a Config with sensible default values.
-    pub fn default_config() -> Self {
-        Config {
-            environment: Environment::Dev,
-        }
+    /// Loads configuration from environment variables.
+    ///
+    /// Configuration is loaded using config-rs which reads from:
+    /// 1. Default values
+    /// 2. Environment variables (with prefix "TRUSS" and "_" separator)
+    ///
+    /// Example env vars:
+    /// - TRUSS_ENVIRONMENT=dev
+    /// - TRUSS_DATABASE_HOST=localhost
+    /// - TRUSS_NATS_PORT=4222
+    pub fn load() -> Result<Self, ConfigError> {
+        let defaults = serde_json::json!({
+            "environment": "dev",
+            "database": {
+                "host": "localhost",
+                "port": 5432,
+                "user": "postgres",
+                "password": "postgres",
+                "database": "truss_dev",
+                "pool_size": 10
+            },
+            "nats": {
+                "port": 4222,
+                "mgmt_port": 8222
+            }
+        });
+
+        let config = ConfigRs::builder()
+            // Add default values
+            .add_source(ConfigRs::try_from(defaults.as_object().unwrap()).unwrap())
+            // Add environment variables with TRUSS prefix
+            // e.g., TRUSS_ENVIRONMENT or TRUSS_DATABASE_HOST
+            .add_source(ConfigEnvironment::with_prefix("TRUSS").separator("_"))
+            .build()?;
+
+        // Deserialize into our Config struct
+        // We need special handling for the environment field since it's an enum
+        let environment_str: String = config.get_string("environment")?;
+        let environment: Environment = environment_str.parse().map_err(|e: EnvironmentError| {
+            ConfigError::Message(e.to_string())
+        })?;
+
+        Ok(Config {
+            environment,
+            database: DatabaseConfig {
+                host: config.get_string("database.host")?,
+                port: config.get::<u16>("database.port")?,
+                user: config.get_string("database.user")?,
+                password: config.get_string("database.password")?,
+                database: config.get_string("database.database")?,
+                pool_size: config.get::<u32>("database.pool_size")?,
+            },
+            nats: NatsConfig {
+                port: config.get::<u16>("nats.port")?,
+                mgmt_port: config.get::<u16>("nats.mgmt_port")?,
+            },
+        })
     }
-}
-
-/// Loads configuration from environment variables and optional config file.
-///
-/// Configuration is loaded in the following order (later values override earlier):
-/// 1. Default values
-/// 2. Config file (if exists)
-/// 3. Environment variables (TRUSS_ENVIRONMENT)
-pub fn load() -> Result<Config, ConfigError> {
-    let mut config = Config::default_config();
-
-    // Try to load from config file
-    let config_paths = ["truss.toml", "configs/default.toml", "configs/config.toml"];
-    for path in &config_paths {
-        if Path::new(path).exists() {
-            let contents = fs::read_to_string(path)?;
-            let file_config: Config = toml::from_str(&contents)?;
-            config.environment = file_config.environment;
-            break;
-        }
-    }
-
-    // Override with environment variable if set
-    if let Ok(env_str) = env::var("TRUSS_ENVIRONMENT") {
-        config.environment = env_str.parse()?;
-    }
-
-    Ok(config)
 }
 
 /// Loads configuration and panics on error (useful for main).
 pub fn must_load() -> Config {
-    load().expect("failed to load configuration")
+    Config::load().expect("failed to load configuration")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
 
-    #[test]
-    fn test_default_config() {
-        let config = Config::default_config();
-        assert_eq!(config.environment, Environment::Dev);
-    }
+    // Serialize tests that modify env vars
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_load_default() {
-        // Clear any existing env var
-        unsafe { env::remove_var("TRUSS_ENVIRONMENT") };
-        let config = load().unwrap();
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // Clear any existing env vars
+        unsafe {
+            env::remove_var("TRUSS_ENVIRONMENT");
+            env::remove_var("TRUSS_DATABASE_HOST");
+        }
+        let config = Config::load().unwrap();
         assert_eq!(config.environment, Environment::Dev);
+        assert_eq!(config.database.host, "localhost");
+        assert_eq!(config.database.port, 5432);
     }
 
     #[test]
     fn test_load_from_env() {
-        unsafe { env::set_var("TRUSS_ENVIRONMENT", "prod") };
-        let config = load().unwrap();
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // Clear first to avoid interference
+        unsafe {
+            env::remove_var("TRUSS_ENVIRONMENT");
+            env::remove_var("TRUSS_DATABASE_HOST");
+        }
+        unsafe {
+            env::set_var("TRUSS_ENVIRONMENT", "prod");
+            env::set_var("TRUSS_DATABASE_HOST", "db.example.com");
+        }
+        let config = Config::load().unwrap();
         assert_eq!(config.environment, Environment::Prod);
-        unsafe { env::remove_var("TRUSS_ENVIRONMENT") };
+        assert_eq!(config.database.host, "db.example.com");
+        unsafe {
+            env::remove_var("TRUSS_ENVIRONMENT");
+            env::remove_var("TRUSS_DATABASE_HOST");
+        }
     }
 
     #[test]
     fn test_load_invalid_env() {
-        unsafe { env::set_var("TRUSS_ENVIRONMENT", "invalid") };
-        let result = load();
+        let _lock = ENV_MUTEX.lock().unwrap();
+        unsafe {
+            env::set_var("TRUSS_ENVIRONMENT", "invalid");
+        }
+        let result = Config::load();
         assert!(result.is_err());
-        unsafe { env::remove_var("TRUSS_ENVIRONMENT") };
+        unsafe {
+            env::remove_var("TRUSS_ENVIRONMENT");
+        }
     }
 }
