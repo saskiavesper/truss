@@ -8,6 +8,8 @@ description = 'Install tools and setup development environment'
 run = '''
 mise install
 lefthook install --force
+test -f .env || cp .env.example .env
+echo '.env' created from template
 '''
 
 [tasks.lint]
@@ -34,6 +36,14 @@ cargo tarpaulin --out Html
 echo "Coverage report: tarpaulin-report.html"
 '''
 
-[tasks."db.reset"]
+[tasks."services.up"]
+description = 'Start local development services'
+run = 'docker compose up -d'
+
+[tasks."services.down"]
+description = 'Stop local development services'
+run = 'docker compose down'
+
+[tasks."services.reset"]
 description = 'Reset local database services (deletes all data!)'
-run = 'docker compose -f dev/env/docker-compose.yml down -v && docker compose -f dev/env/docker-compose.yml up -d'
+run = 'docker compose down -v && docker compose up -d'
