@@ -1,4 +1,7 @@
 mod config;
+mod organization;
+#[cfg(test)]
+mod organization_test;
 mod validation;
 
 use config::must_load;
