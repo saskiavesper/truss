@@ -1,6 +1,7 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
+
+use crate::event::{self, IOError, HasEventBus};
 
 // ============================================================================
 // Value Structs - Domain Types
@@ -197,11 +198,7 @@ pub enum UncommittedEvent {
 }
 
 /// Committed event - with timestamp, ready for persistence
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Event {
-    pub kind: EventKind,
-    pub timestamp: DateTime<Utc>,
-}
+pub type Event = event::Event<EventKind>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EventKind {
@@ -225,10 +222,9 @@ pub enum EventKind {
     },
 }
 
-impl Event {
-    /// Commit an uncommitted event by adding a timestamp (called by imperative shell)
-    pub fn commit(uncommitted: UncommittedEvent) -> Self {
-        let kind = match uncommitted {
+impl From<UncommittedEvent> for EventKind {
+    fn from(uncommitted: UncommittedEvent) -> Self {
+        match uncommitted {
             UncommittedEvent::Created {
                 id,
                 name,
@@ -251,11 +247,6 @@ impl Event {
             UncommittedEvent::CrmReferenceAttached { id, reference } => {
                 EventKind::CrmReferenceAttached { id, reference }
             }
-        };
-
-        Self {
-            kind,
-            timestamp: Utc::now(),
         }
     }
 }
@@ -264,15 +255,7 @@ impl Event {
 // Error Types
 // ============================================================================
 
-/// Errors that can occur during IO operations
-#[derive(Debug, thiserror::Error)]
-pub enum IoError {
-    #[error("database error: {0}")]
-    Database(String),
 
-    #[error("event bus error: {0}")]
-    EventBus(String),
-}
 
 /// Errors that can occur during create operation
 #[derive(Debug, thiserror::Error)]
@@ -281,7 +264,7 @@ pub enum CreateError {
     InvalidName(#[from] NameValidationError),
 
     #[error(transparent)]
-    Io(#[from] IoError),
+    Io(#[from] IOError),
 }
 
 /// Errors that can occur during update operation
@@ -291,7 +274,7 @@ pub enum UpdateError {
     InvalidName(#[from] NameValidationError),
 
     #[error(transparent)]
-    Io(#[from] IoError),
+    Io(#[from] IOError),
 }
 
 /// Errors that can occur during generate code operation
@@ -301,7 +284,7 @@ pub enum GenerateCodeError {
     CodeAlreadyExists,
 
     #[error(transparent)]
-    Io(#[from] IoError),
+    Io(#[from] IOError),
 }
 
 /// Errors that can occur during attach CRM reference operation
@@ -311,7 +294,7 @@ pub enum AttachCrmReferenceError {
     InvalidCrmReference(#[from] CrmReferenceValidationError),
 
     #[error(transparent)]
-    Io(#[from] IoError),
+    Io(#[from] IOError),
 }
 
 // ============================================================================
@@ -321,16 +304,11 @@ pub enum AttachCrmReferenceError {
 /// Capability to read organization state
 #[async_trait]
 pub trait HasOrganizationReader {
-    async fn load_organization(&self, id: OrganizationId) -> Result<Option<Organization>, IoError>;
+    async fn load_organization(&self, id: OrganizationId) -> Result<Option<Organization>, IOError>;
 }
 
 
 
-/// Capability to publish events to message bus
-#[async_trait]
-pub trait HasEventBus {
-    async fn publish_events(&self, events: &[Event]) -> Result<(), IoError>;
-}
 
 // ============================================================================
 // Aggregate State
@@ -486,11 +464,14 @@ pub fn apply_event(state: &mut Organization, event: &EventKind) {
 async fn commit_and_publish<C>(
     ctx: &C,
     uncommitted: Vec<UncommittedEvent>,
-) -> Result<Vec<Event>, IoError>
+) -> Result<Vec<Event>, IOError>
 where
-    C: HasEventBus,
+    C: HasEventBus<Event>,
 {
-    let committed: Vec<Event> = uncommitted.into_iter().map(Event::commit).collect();
+    let committed: Vec<Event> = uncommitted
+        .into_iter()
+        .map(|u| Event::new(EventKind::from(u)))
+        .collect();
     ctx.publish_events(&committed).await?;
     Ok(committed)
 }
@@ -499,17 +480,17 @@ where
 async fn require_organization<C: HasOrganizationReader>(
     ctx: &C,
     id: OrganizationId,
-) -> Result<Organization, IoError> {
+) -> Result<Organization, IOError> {
     ctx.load_organization(id)
         .await?
-        .ok_or(IoError::Database("organization not found".to_string()))
+        .ok_or(IOError::Database("organization not found".to_string()))
 }
 
 /// Handle create organization command
 /// Requires: EventBus (no read needed - creates new state)
 pub async fn handle_create<C>(ctx: &C, cmd: CreateOrganization) -> Result<(), CreateError>
 where
-    C: HasEventBus,
+    C: HasEventBus<Event>,
 {
     let (_new_state, uncommitted) = create_organization(cmd)?;
     let _committed = commit_and_publish(ctx, uncommitted).await?;
@@ -521,7 +502,7 @@ where
 /// Requires: OrganizationReader + EventBus
 pub async fn handle_update<C>(ctx: &C, cmd: UpdateOrganization) -> Result<(), UpdateError>
 where
-    C: HasOrganizationReader + HasEventBus,
+    C: HasOrganizationReader + HasEventBus<Event>,
 {
     let state = require_organization(ctx, cmd.id).await?;
     let (_new_state, uncommitted) = update_organization(&state, cmd)?;
@@ -537,7 +518,7 @@ pub async fn handle_generate_code<C>(
     cmd: GenerateOrganizationCode,
 ) -> Result<(), GenerateCodeError>
 where
-    C: HasOrganizationReader + HasEventBus,
+    C: HasOrganizationReader + HasEventBus<Event>,
 {
     let state = require_organization(ctx, cmd.id).await?;
     let (_new_state, uncommitted) = generate_organization_code(&state, cmd)?;
@@ -553,7 +534,7 @@ pub async fn handle_attach_crm_reference<C>(
     cmd: AttachCrmReference,
 ) -> Result<(), AttachCrmReferenceError>
 where
-    C: HasOrganizationReader + HasEventBus,
+    C: HasOrganizationReader + HasEventBus<Event>,
 {
     let state = require_organization(ctx, cmd.id).await?;
     let (_new_state, uncommitted) = attach_crm_reference(&state, cmd)?;
