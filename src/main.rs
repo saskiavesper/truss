@@ -1,8 +1,12 @@
 mod config;
+mod event;
 mod organization;
 #[cfg(test)]
 mod organization_test;
 mod validation;
+mod workspace;
+#[cfg(test)]
+mod workspace_test;
 
 use config::must_load;
 
