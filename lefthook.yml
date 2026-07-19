@@ -4,13 +4,13 @@ pre-commit:
     format:
       run: mise format
       stage_fixed: true
-      glob: "*.{go}"
+      glob: "*.{rs}"
     lint:
       run: mise lint
-      glob: "*.{go}"
+      glob: "*.{rs}"
     test:
       run: mise test
-      glob: "*.{go}"
+      glob: "*.{rs}"
 
 commit-msg:
   commands:
