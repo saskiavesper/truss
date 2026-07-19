@@ -229,7 +229,7 @@ The Rust prototype work (ADR-001 domain architecture, ADR-002 snapshot strategy)
 | Artifact | Status | Action |
 |----------|--------|--------|
 | ADR-001: Domain Architecture | Updated | Already reflects Elixir patterns (behaviours, `execute`/`apply`) |
-| ADR-002: Snapshot Strategy | Superseded | Commanded's GenServer lifecycle replaces custom snapshot logic. Aggregate state lives in memory and is rebuilt from events on demand. |
+| ADR-002: State Management | Superseded | Commanded's GenServer lifecycle replaces custom snapshot logic. Aggregate state lives in memory and is rebuilt from events on demand. |
 | Development Roadmap | Updated | Phase 0 rewritten for Phoenix + Commanded + Postgres. Domain phases unchanged. |
 
 ## Alternatives Considered
@@ -250,7 +250,7 @@ The BEAM has RocksDB bindings (`Erlex`). We could keep RocksDB for the event sto
 
 - Obsidian note: `architecture/truss-runtime-decision.md` (detailed pros/cons comparison)
 - ADR-001: Domain Architecture Pattern (FC/IS, value structs, reduce/apply)
-- ADR-002: Snapshot Strategy (comparison of three approaches — superseded by Commanded's model)
+- ADR-002: State Management (comparison of three approaches — superseded by Commanded's model)
 - Development Roadmap: `projects/Truss — Development Roadmap.md` (updated for Elixir)
 - [Commanded documentation](https://hexdocs.pm/commanded/)
 - [Commanded.EctoEventStore](https://hexdocs.pm/commanded_ecto_eventstore/)
